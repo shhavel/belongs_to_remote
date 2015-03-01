@@ -27,12 +27,21 @@ module BelongsToRemote
             return nil unless self.#{name.to_s + "_type"} && self.#{options[:foreign_key] || name.to_s + "_id" }
             @#{name} ||= Object.const_get(self.#{name.to_s + "_type"}).find(self.#{options[:foreign_key] || name.to_s + "_id" }) rescue nil
           end
+
+          def #{name}=(object)
+            self.#{options[:foreign_key] || name.to_s + "_id" } = object.__send__(object.class.respond_to?(:primary_key) ? object.class.primary_key.to_sym : :id)
+            self.#{name.to_s + "_type"} = object.class.to_s
+          end
         )
       else
         class_eval %(
           def #{name}
             return nil unless self.#{options[:foreign_key] || name.to_s + "_id" }
             @#{name} ||= #{options[:class_name] || name.to_s.split('_').each(&:capitalize!).join}.find(self.#{options[:foreign_key] || name.to_s + "_id" }) rescue nil
+          end
+
+          def #{name}=(object)
+            self.#{options[:foreign_key] || name.to_s + "_id" } = object.__send__(object.class.respond_to?(:primary_key) ? object.class.primary_key.to_sym : :id)
           end
         )
       end

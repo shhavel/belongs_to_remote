@@ -1,12 +1,11 @@
 require "belongs_to_remote/version"
-require "active_support/concern"
-require "active_record"
-require "active_resource"
 
 module BelongsToRemote
-  extend ActiveSupport::Concern
+  def self.included(base)
+    base.extend(ClassMethods)
+  end
 
-    module ClassMethods
+  module ClassMethods
     ##
     # Defines private instance method for one-to-one association
     # with ActiveResource::Base (or ActiveRecord::Base).
@@ -21,18 +20,19 @@ module BelongsToRemote
     # Defined method returns nil if none is found.
     #
     def belongs_to_remote(name, options = {})
+      name.to_s.split('_').each(&:capitalize!).join
       if options[:polymorphic]
         class_eval %(
           def #{name}
             return nil unless self.#{name.to_s + "_type"} && self.#{options[:foreign_key] || name.to_s + "_id" }
-            @#{name} ||= self.#{name.to_s + "_type"}.constantize.find(self.#{options[:foreign_key] || name.to_s + "_id" }) rescue nil
+            @#{name} ||= Object.const_get(self.#{name.to_s + "_type"}).find(self.#{options[:foreign_key] || name.to_s + "_id" }) rescue nil
           end
         )
       else
         class_eval %(
           def #{name}
             return nil unless self.#{options[:foreign_key] || name.to_s + "_id" }
-            @#{name} ||= #{options[:class_name] || name.to_s.classify}.find(self.#{options[:foreign_key] || name.to_s + "_id" }) rescue nil
+            @#{name} ||= #{options[:class_name] || name.to_s.split('_').each(&:capitalize!).join}.find(self.#{options[:foreign_key] || name.to_s + "_id" }) rescue nil
           end
         )
       end
@@ -40,15 +40,23 @@ module BelongsToRemote
   end
 end
 
-class ActiveRecord::Base
-  include BelongsToRemote
+begin
+  require 'active_record'
+  class ActiveRecord::Base
+    include BelongsToRemote
+  end
+rescue LoadError
 end
 
-unless ActiveResource::Base.respond_to?(:belongs_to)
+begin
+  require 'active_resource'
+  unless ActiveResource::Base.respond_to?(:belongs_to)
   class ActiveResource::Base
     include BelongsToRemote
     class << self
       alias_method :belongs_to, :belongs_to_remote
     end
   end
+end
+rescue LoadError
 end

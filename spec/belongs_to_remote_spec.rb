@@ -54,5 +54,17 @@ describe BelongsToRemote do
       expect(subject.owner_id).to eq customer.id
       expect(subject.owner_type).to eq "Customer"
     end
+
+    it "assigns association id to nil if provided nil as association object" do
+      subject.user = nil
+      expect(subject.user_id).to be_nil
+      subject.depot = nil
+      expect(subject.depot_id).to be_nil
+      subject.order = nil
+      expect(subject.booking_id).to be_nil
+      subject.owner = nil
+      expect(subject.owner_id).to eq nil
+      expect(subject.owner_type).to eq nil
+    end
   end
 end

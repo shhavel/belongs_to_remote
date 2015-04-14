@@ -29,8 +29,8 @@ module BelongsToRemote
           end
 
           def #{name}=(object)
-            self.#{options[:foreign_key] || name.to_s + "_id" } = object.__send__(object.class.respond_to?(:primary_key) ? object.class.primary_key.to_sym : :id)
-            self.#{name.to_s + "_type"} = object.class.to_s
+            self.#{options[:foreign_key] || name.to_s + "_id" } = object ? object.__send__(object.class.respond_to?(:primary_key) ? object.class.primary_key.to_sym : :id) : nil
+            self.#{name.to_s + "_type"} = object ? object.class.to_s : nil
           end
         )
       else
@@ -41,7 +41,7 @@ module BelongsToRemote
           end
 
           def #{name}=(object)
-            self.#{options[:foreign_key] || name.to_s + "_id" } = object.__send__(object.class.respond_to?(:primary_key) ? object.class.primary_key.to_sym : :id)
+            self.#{options[:foreign_key] || name.to_s + "_id" } = object ? object.__send__(object.class.respond_to?(:primary_key) ? object.class.primary_key.to_sym : :id) : nil
           end
         )
       end
@@ -59,13 +59,15 @@ end
 
 begin
   require 'active_resource'
-  unless ActiveResource::Base.respond_to?(:belongs_to)
   class ActiveResource::Base
     include BelongsToRemote
-    class << self
-      alias_method :belongs_to, :belongs_to_remote
+  end
+  unless ActiveResource::Base.respond_to?(:belongs_to)
+    class ActiveResource::Base
+      class << self
+        alias_method :belongs_to, :belongs_to_remote
+      end
     end
   end
-end
 rescue LoadError
 end
